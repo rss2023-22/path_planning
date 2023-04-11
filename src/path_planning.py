@@ -40,17 +40,19 @@ class PathPlan(object):
         self.heuristic = None
         self.map_res = None
 
+
     def pixelToMapCoords(self,u,v):
         u *= self.map_res; v *= self.map_res
         x,y,_ = np.matmul(np.array([[u,v,0]]),self.rot_alt)[0]
         return x+self.rot_matrix[0][3], y+self.rot_matrix[1][3]
     
+
     def eucDist(self,coord1,coord2):
         return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]+coord1[1])**2)
 
+
     def map_cb(self, msg):
         # NOTE: EVERYTHING IN THIS FUNCTION CAN BE IMPROVED FOR SPEED
-
         self.map_res = msg.info.resolution
         map = np.array(list(msg.data))
         map = np.reshape(map,(msg.info.height, msg.info.width)) # convert from row-major order
@@ -84,13 +86,9 @@ class PathPlan(object):
         self.map = map
 
 
-
     def odom_cb(self, data): # sets the curren position of the car
-        now_odom = np.array([data.twist.twist.linear.x,
-                                 data.twist.twist.linear.y,
-                                 data.twist.twist.angular.z])
+        now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
         self.start_pos = now_odom
-
 
 
     def goal_cb(self, data):
@@ -138,6 +136,10 @@ class PathPlan(object):
                 # NOTE: again, would be much smarter to have a sorted Q, but for simplicity this way works
                 print(Q) # visualize how Q is different than best-first with uniform cost
                 N , Q = chooseN(Q,hConsistent) # pick the path with lowest f, NOTE: f is h+g!!! cost_to_come+cost_incurred! STORE H+G and 
+                ##################
+                ##########
+                # NOTE: DO A HEAPQ OF H+G store G as well in node!!!
+                #############
                 partialPath = N[1]
                 costIncurred = N[0]
                 head = partialPath[-1]
