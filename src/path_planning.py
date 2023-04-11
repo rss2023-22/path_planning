@@ -54,7 +54,7 @@ class PathPlan(object):
         return int((u+self.rot_back[0][3])/self.map_res), int((v+self.rot_back[1][3])/self.map_res)
 
     def eucDist(self,coord1,coord2): # coord = (x,y)
-        return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]+coord1[1])**2)
+        return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]-coord2[1])**2)
 
 
     def map_cb(self, msg):
