@@ -6,10 +6,12 @@ from geometry_msgs.msg import PoseStamped, PoseArray, Point
 from nav_msgs.msg import Odometry, OccupancyGrid
 import rospkg
 import time, os
+#import dubins
 import tf
 from utils import LineTrajectory
 from graph_class import Graph
 import heapq
+from skimage import morphology
 
 #### NOTE: later on we should try dublin curves, nice package in the git for this...
 
@@ -62,6 +64,9 @@ class PathPlan(object):
         self.map_res = msg.info.resolution
         map = np.array(list(msg.data))
         map = np.reshape(map,(msg.info.height, msg.info.width)) # convert from row-major order
+        z = morphology.disk(10)
+        map = morphology.dilation(map,z)
+        print('dilated')
         height = np.shape(map)[0]; self.height = height
         width = np.shape(map)[1]; self.width = width
         self.heuristic = np.zeros((height,width))
@@ -73,30 +78,15 @@ class PathPlan(object):
         rot_alt = [rot_matrix[0][0:3],rot_matrix[1][0:3],rot_matrix[2][0:3]]
         self.rot_matrix = rot_matrix; self.rot_alt = rot_alt; self.rot_back = np.linalg.inv(self.rot_matrix); self.rot_back_alt = np.linalg.inv(self.rot_alt)
  
-        # # CREATE GRAPH # NOTE: indexes should be flipped, says to do on git? 
-        # graph = Graph() # each node is (u,v,x,y)! only feasible nodes and edges exist. Edges undirected
-        # for i in range(height):
-        #     for j in range(width):
-        #         curr = (i,j)
-        #         if map[curr[0]][curr[1]] == 0: # if current node isn't obstacle      
-        #             neighbors = [(i+1,j),(i-1,j),(i,j+1),(i,j-1),(i+1,j+1),(i-1,j-1),(i+1,j-1),(i-1,j+1)]
-        #             for node in neighbors:
-        #                 try:
-        #                     val = map[node[0]][node[1]]
-        #                     if val == 0:
-        #                         graph.addEdge((curr[0],curr[1]),(node[0],node[1])) # NOTE: speed of adding edge can be SIGNIFICANTLY improved in Graph via not double-adding
-        #                 except:
-        #                     continue
-        # self.graph = Graph() 
-        # print(len(graph.getNodes()))
         self.map = map
 
 
     def odom_cb(self, data): # sets the curren position of the car
         now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
         #print(data.twist.twist.linear.x,data.twist.twist.linear.y)
-        u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-        self.start_pos = (u,v)
+        if self.rot_alt != None:
+            u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
+            self.start_pos = (u,v)
 
 
     def goal_cb(self, data):
@@ -168,11 +158,13 @@ class PathPlan(object):
 
         costIncurred, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
         
+        # NOTE: changed utils.py to if True! should prob change back
         for node in partialPath:
             point = Point()
             x1,y1 = self.pixelToMapCoords(node[0],node[1])
             point.x = x1
             point.y = y1
+            point.z = 2
             self.trajectory.addPoint(point)
 
         # publish trajectory
