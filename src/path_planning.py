@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from geometry_msgs.msg import PoseStamped, PoseArray
+from geometry_msgs.msg import PoseStamped, PoseArray, Point
 from nav_msgs.msg import Odometry, OccupancyGrid
 import rospkg
 import time, os
@@ -89,12 +89,14 @@ class PathPlan(object):
         #                     continue
         # self.graph = Graph() 
         # print(len(graph.getNodes()))
-        # self.map = map
+        self.map = map
 
 
     def odom_cb(self, data): # sets the curren position of the car
         now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        self.start_pos = now_odom
+        #print(data.twist.twist.linear.x,data.twist.twist.linear.y)
+        u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
+        self.start_pos = (u,v)
 
 
     def goal_cb(self, data):
@@ -109,7 +111,7 @@ class PathPlan(object):
         self.goal_pos_map = (u,v) # no theta?
 
 
-        self.plan_path((self.start_pos[0],self.start_pos[1]),self.goal_pos_map,self.map)
+        self.plan_path((self.start_pos[0],self.start_pos[1]),self.goal_pos_map,self.map[:])
 
 
 
@@ -134,7 +136,6 @@ class PathPlan(object):
             heapq.heapify(Q)
             print('planning path.......')
             while Q:
-                print(Q)
                 shortest = heapq.heappop(Q)
                 f , N = shortest
                 partialPath = N[1]
@@ -150,17 +151,12 @@ class PathPlan(object):
                     for child in children:
                         if child not in expanded:
                             try:
-                                print('here1')
-                                val = map[child[0]][child[1]]
-                                print('here2')
+                                val = map[child[1]][child[0]]
                                 if val == 0:
-                                    print('here3')
                                     extension = partialPath + [child]
-                                    print('here4')
                                     costToChild = self.eucDist(head,child) + costIncurred
-                                    print('here5')
+                                    #costToChild = 1.0
                                     heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,extension)))
-                                    print('here6')
                             except: # out of bounds
                                 continue 
             return None, None
@@ -171,7 +167,13 @@ class PathPlan(object):
         # NOTE: could be better to store map in irl coords rather than pixel coords to avoid transforms during A*!
 
         costIncurred, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
-        print(partialPath)
+        
+        for node in partialPath:
+            point = Point()
+            x1,y1 = self.pixelToMapCoords(node[0],node[1])
+            point.x = x1
+            point.y = y1
+            self.trajectory.addPoint(point)
 
         # publish trajectory
         self.traj_pub.publish(self.trajectory.toPoseArray())
