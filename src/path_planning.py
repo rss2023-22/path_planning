@@ -60,7 +60,6 @@ class PathPlan(object):
     def eucDist(self,coord1,coord2): # coord = (x,y)
         return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]-coord2[1])**2)
 
-
     def map_cb(self, msg):
         # NOTE: EVERYTHING IN THIS FUNCTION CAN BE IMPROVED FOR SPEED
         self.map_res = msg.info.resolution
@@ -72,7 +71,6 @@ class PathPlan(object):
         height = np.shape(map)[0]; self.height = height
         width = np.shape(map)[1]; self.width = width
         self.heuristic = np.zeros((height,width))
-
 
         # DEFINE ROTATION STUFF
         rot_matrix = tf.transformations.quaternion_matrix([0, 0, msg.info.origin.orientation.z, msg.info.origin.orientation.w])
@@ -108,12 +106,10 @@ class PathPlan(object):
 
     def AStarWithExpandedList(self,map,start_point,end_point):
             
-            def computeH(u,v): # NOTE: currently this does it in pixel frame... not sure if that is an issue... 
-                #x,y = self.pixelToMapCoords(u,v)
+            def computeH(u,v): # NOTE: currently this does it in pixel frame
                 return self.eucDist((u,v),(self.goal_pos_map[0],self.goal_pos_map[1]))
             
             def getChildren(i,j):
-                # coord =(u,v)
                 return [(i+1,j),(i-1,j),(i,j+1),(i,j-1),(i+1,j+1),(i-1,j-1),(i+1,j-1),(i-1,j+1)]
 
             """
@@ -146,7 +142,6 @@ class PathPlan(object):
                                 if val == 0:
                                     extension = partialPath + [child]
                                     costToChild = self.eucDist(head,child) + costIncurred
-                                    #costToChild = 1.0
                                     heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,extension)))
                             except: # out of bounds
                                 continue 
