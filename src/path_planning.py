@@ -89,12 +89,8 @@ class PathPlan(object):
 
 
     def goal_cb(self, data):
-        x = data.pose.position.x
-        y = data.pose.position.y
-        z = data.pose.orientation.z
-        w = data.pose.orientation.w
-        theta = 2*np.arctan2(z,w)
-        self.goal_pos_irl = (x,y,theta)
+        theta = 2*np.arctan2(data.pose.orientation.z,data.pose.orientation.w)
+        self.goal_pos_irl = (data.pose.position.x,data.pose.position.y,theta)
         print('set new goal:'+str(self.goal_pos_irl))
         u,v = self.mapToPixelCoords(self.goal_pos_irl[0],self.goal_pos_irl[1])
         self.goal_pos_map = (u,v) # no theta?
