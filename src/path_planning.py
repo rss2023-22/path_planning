@@ -14,6 +14,8 @@ import heapq
 from skimage import morphology
 
 #### NOTE: later on we should try dublin curves, nice package in the git for this...
+# roslaunch racecar_simulator simulate.launch
+# roslaunch lab6 plan_trajectory.launch
 
 class PathPlan(object):
     """ Listens for goal pose published by RViz and uses it to plan a path from
@@ -81,9 +83,8 @@ class PathPlan(object):
         self.map = map
 
 
-    def odom_cb(self, data): # sets the curren position of the car
+    def odom_cb(self, data): # sets the curren position of the car... currently green arrow doesn't work?? same fix as in last lab tho
         now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        #print(data.twist.twist.linear.x,data.twist.twist.linear.y)
         if self.rot_alt != None:
             u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
             self.start_pos = (u,v)
@@ -156,7 +157,7 @@ class PathPlan(object):
         # NOTE: start AND end are in pixel coords
         # NOTE: could be better to store map in irl coords rather than pixel coords to avoid transforms during A*!
 
-        costIncurred, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
+        _, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
         
         # NOTE: changed utils.py to if True! should prob change back
         for node in partialPath:
@@ -164,7 +165,7 @@ class PathPlan(object):
             x1,y1 = self.pixelToMapCoords(node[0],node[1])
             point.x = x1
             point.y = y1
-            point.z = 2
+            point.z = 100.0
             self.trajectory.addPoint(point)
 
         # publish trajectory
