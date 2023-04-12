@@ -11,6 +11,8 @@ from visualization_msgs.msg import Marker
 from ackermann_msgs.msg import AckermannDriveStamped
 from nav_msgs.msg import Odometry
 
+eucl_dist = lambda a,b: ((a[0]-b[0])**2+(a[1]-b[1])**2)**0.5
+
 class PurePursuit(object):
     """ Implements Pure Pursuit trajectory tracking with a fixed lookahead and speed.
     """
@@ -38,6 +40,37 @@ class PurePursuit(object):
         figure out where to drive to, and make the appropriate drive command
         '''
         if self.trajectory.empty(): return
+        
+        pose = (msg.pose.pose.position.x,msg.pose.pose.position.y)
+        
+        # find target point
+        nearest_point_index = None
+        nearest_dist = float('inf')
+        for i in range(len(self.trajectory.points)):
+            dist = eucl_dist(self.trajectory.points[i],pose)
+            if dist < nearest_dist:
+                nearest_dist = dist
+                nearest_point_index = i
+        
+        for i in range(nearest_point_index,len(self.trajectory.points)):
+            if eucl_dist(self.trajectory.points[i],pose) > self.lookahead: break
+        
+        # find angle in car frame
+        dx,dy = self.trajectory.points[i][0]-pose[0],self.trajectory.points[i][1]-pose[1]
+        theta = 2*np.arctan2(msg.pose.pose.orientation.z,msg.pose.pose.orientation.w)
+        dx,dy = np.cos(theta)*dx+np.sin(theta)*dy,-np.sin(theta)*dx+np.cos(theta)*dy
+        delta = np.arctan2(dy,dx)
+        
+        # drive to target
+        drive_cmd = AckermannDriveStamped()
+        
+        drive_cmd.header.frame_id = 'base_link'
+        drive_cmd.header.stamp = rospy.Time()
+        
+        drive_cmd.drive.speed = self.speed
+        drive_cmd.drive.steering_angle = delta
+        
+        self.drive_pub.publish(drive_cmd)
 
 if __name__=="__main__":
     rospy.init_node("pure_pursuit")
