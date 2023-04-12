@@ -123,7 +123,6 @@ class PathPlan(object):
             parent = {S:None}
             expanded = set()
             Q = [(computeH(S[0],S[1]),(0,S))] # (cost_to_come+cost_incurred,(cost_incurred, head))
-            heapq.heapify(Q)
             print('planning path.......')
             while Q:
                 _, N = heapq.heappop(Q)
