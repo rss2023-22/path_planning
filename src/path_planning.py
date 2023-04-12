@@ -91,18 +91,18 @@ class PathPlan(object):
 
     def odom_cb(self, data): # sets the curren position of the car... currently green arrow doesn't work?? same fix as in last lab tho
         # print('HERE')
-        # now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        # if self.rot_alt != None:
-        #     u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-        #     self.start_pos = (u,v)
-        pass
+        now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
+        if self.rot_alt != None:
+            u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
+            self.start_pos = (u,v)
+        #pass
 
 
     def goal_cb(self, data):
         theta = 2*np.arctan2(data.pose.orientation.z,data.pose.orientation.w)
         self.goal_pos_irl = (data.pose.position.x,data.pose.position.y,theta)
         print('set new goal:'+str(self.goal_pos_irl))
-        self.trajectory = LineTrajectory("/planned_trajectory")
+        #self.trajectory = LineTrajectory("/planned_trajectory")
         u,v = self.mapToPixelCoords(self.goal_pos_irl[0],self.goal_pos_irl[1])
         self.goal_pos_map = (u,v) # no theta?
 
