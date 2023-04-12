@@ -16,7 +16,7 @@ from skimage import morphology
 #### NOTE: later on we should try dublin curves, nice package in the git for this...
 # roslaunch racecar_simulator simulate.launch
 # roslaunch lab6 plan_trajectory.launch
-
+# sudo apt-get install python-scipy
 class PathPlan(object):
     """ Listens for goal pose published by RViz and uses it to plan a path from
     current car pose.
@@ -108,7 +108,7 @@ class PathPlan(object):
 
 
 
-    def AStarWithExpandedList(self,map,start_point,end_point):
+    def AStarWithExpandedList(self,map,S,G):
             
             def computeH(u,v): # NOTE: currently this does it in pixel frame
                 return self.eucDist((u,v),(self.goal_pos_map[0],self.goal_pos_map[1]))
@@ -119,21 +119,24 @@ class PathPlan(object):
             """
             A* with an expanded list, assumes consistent heuristic to be correct
             """
-            S = start_point
-            G = end_point
 
+            parent = {S:None}
             expanded = set()
-            Q = [(computeH(S[0],S[1]),(0,[S]))] # (cost_to_come+cost_incurred,(cost_incurred, [partial path]))
+            Q = [(computeH(S[0],S[1]),(0,S))] # (cost_to_come+cost_incurred,(cost_incurred, head))
             heapq.heapify(Q)
             print('planning path.......')
             while Q:
-                shortest = heapq.heappop(Q)
-                f , N = shortest
-                partialPath = N[1]
-                costIncurred = N[0]
-                head = partialPath[-1]
+                _, N = heapq.heappop(Q)
+                head = N[1]; costIncurred = N[0]
                 if head == G:
-                    return costIncurred, partialPath
+                    #get path from parent dictionary:
+                    curr = G
+                    path = [G]
+                    while parent[curr] != None:
+                        path.append(parent[curr])
+                        curr = parent[curr]
+                    path.reverse()
+                    return costIncurred, path
                 elif head in expanded:
                     continue
                 else:
@@ -144,12 +147,12 @@ class PathPlan(object):
                             try:
                                 val = map[child[1]][child[0]]
                                 if val == 0:
-                                    extension = partialPath + [child]
+                                    parent[child] = head
                                     costToChild = self.eucDist(head,child) + costIncurred
                                     #costToChild = 1 + costIncurred
-                                    heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,extension)))
+                                    heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,child)))
                             except: # out of bounds
-                                continue 
+                                continue             
             return None, None
 
 
@@ -159,21 +162,21 @@ class PathPlan(object):
 
         _, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
         
-        
-        # NOTE: changed utils.py to if True! should prob change back
-        for node in partialPath:
-            point = Point()
-            x1,y1 = self.pixelToMapCoords(node[0],node[1])
-            point.x = x1
-            point.y = y1
-            point.z = 100.0
-            self.trajectory.addPoint(point)
+        if partialPath is not None:
+            # NOTE: changed utils.py to if True! should prob change back
+            for node in partialPath:
+                point = Point()
+                x1,y1 = self.pixelToMapCoords(node[0],node[1])
+                point.x = x1
+                point.y = y1
+                point.z = 100.0
+                self.trajectory.addPoint(point)
 
-        # publish trajectory
-        self.traj_pub.publish(self.trajectory.toPoseArray())
+            # publish trajectory
+            self.traj_pub.publish(self.trajectory.toPoseArray())
 
-        # visualize trajectory Markers
-        self.trajectory.publish_viz()
+            # visualize trajectory Markers
+            self.trajectory.publish_viz()
 
 
 if __name__=="__main__":
