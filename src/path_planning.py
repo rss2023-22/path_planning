@@ -139,7 +139,9 @@ class PathPlan(object):
                         path.append(parent[curr])
                         curr = parent[curr]
                     path.reverse()
+                    print(path)
                     return costIncurred, path
+                
                 elif head in expanded:
                     continue
                 else:
@@ -152,25 +154,69 @@ class PathPlan(object):
                                 if val == 0:
                                     parent[child] = head
                                     costToChild = self.eucDist(head,child) + costIncurred
-                                    #costToChild = 1 + costIncurred
                                     heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,child)))
                                     #heapq.heappush(Q,(costToChild,(costToChild,child)))
+                                else:
+                                    expanded.add(child)
                             except: # out of bounds
                                 continue             
             return None, None
 
+    def AStarWithExpandedListPartialPaths(self,map,S,G):
+            
+            def computeH(u,v): # NOTE: currently this does it in pixel frame
+                return self.eucDist((u,v),(self.goal_pos_map[0],self.goal_pos_map[1]))
+            
+            def getChildren(i,j):
+                return [(i+1,j),(i-1,j),(i,j+1),(i,j-1),(i+1,j+1),(i-1,j-1),(i+1,j-1),(i-1,j+1)]
+                #return [(i+1,j),(i-1,j),(i,j+1),(i,j-1),(i+1,j+1),(i-1,j-1),(i+1,j-1),(i-1,j+1),(i+2,j),(i-2,j),(i,j+2),(i,j-2),(i+2,j+2),(i-2,j-2),(i+2,j-2),(i-2,j+2),(i+2,j-1),(i-2,j+1),(i+2,j+1),(i-2,j-1),(i+1,j+2),(i-1,j-2),(i+1,j-2),(i-1,j+2)]
+
+            """
+            A* with an expanded list, assumes consistent heuristic to be correct
+            """
+
+            expanded = set()
+            Q = [(computeH(S[0],S[1]),(0,[S]))] # (cost_to_come+cost_incurred,(cost_incurred, head))
+            heapq.heapify(Q)
+            print('planning path.......')
+            while Q:
+                _, N = heapq.heappop(Q)
+                partial_path = N[1]; costIncurred = N[0]
+                head = partial_path[-1]
+                if head == G:
+                    return costIncurred, partial_path
+                elif head in expanded:
+                    continue
+                else:
+                    expanded.add(head) # NOTE: check!
+                    children = getChildren(head[0],head[1])
+                    for child in children:
+                        if child not in expanded:
+                            try:
+                                val = map[child[1]][child[0]]
+                                if val == 0:
+                                    new_partial = partial_path[:]
+                                    new_partial.append(child)
+                                    costToChild = self.eucDist(head,child) + costIncurred
+                                    heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,new_partial)))
+                                    #heapq.heappush(Q,(costToChild,(costToChild,child)))
+                                else:
+                                    expanded.add(child)
+                            except: # out of bounds
+                                continue             
+            return None, None
 
     def plan_path(self, start_point, end_point, map):
         # NOTE: start AND end are in pixel coords
         # NOTE: could be better to store map in irl coords rather than pixel coords to avoid transforms during A*!
 
-        _, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
+        _, partialPath = self.AStarWithExpandedListPartialPaths(map,start_point,end_point)
         
         if partialPath is not None:
             # NOTE: changed utils.py to if True! should prob change back
             for node in partialPath:
                 point = Point()
-                x1,y1 = self.pixelToMapCoords(node[0],node[1])
+                x1,y1 = np.round(self.pixelToMapCoords(node[0],node[1]),decimals =2)
                 point.x = x1
                 point.y = y1
                 point.z = 100.0
