@@ -16,12 +16,13 @@ class PurePursuit(object):
     """
     def __init__(self):
         self.odom_topic       = rospy.get_param("~odom_topic")
-        self.lookahead        = # FILL IN #
-        self.speed            = # FILL IN #
-        self.wheelbase_length = # FILL IN #
+        self.lookahead        = 0.5 # FILL IN #
+        self.speed            = 1 # FILL IN #
+        self.wheelbase_length = 1 # FILL IN #
         self.trajectory  = utils.LineTrajectory("/followed_trajectory")
         self.traj_sub = rospy.Subscriber("/trajectory/current", PoseArray, self.trajectory_callback, queue_size=1)
         self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=1)
+        self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odometry_callback, queue_size=1)
 
     def trajectory_callback(self, msg):
         ''' Clears the currently followed trajectory, and loads the new one from the message
@@ -31,6 +32,12 @@ class PurePursuit(object):
         self.trajectory.fromPoseArray(msg)
         self.trajectory.publish_viz(duration=0.0)
 
+    def odometry_callback(self, msg):
+        '''
+        Given a pose estimate from the localization package,
+        figure out where to drive to, and make the appropriate drive command
+        '''
+        if self.trajectory.empty(): return
 
 if __name__=="__main__":
     rospy.init_node("pure_pursuit")
