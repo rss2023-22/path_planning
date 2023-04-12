@@ -54,6 +54,13 @@ class PurePursuit(object):
         
         for i in range(nearest_point_index,len(self.trajectory.points)):
             if eucl_dist(self.trajectory.points[i],pose) > self.lookahead: break
+        else:
+            drive_cmd = AckermannDriveStamped()
+            drive_cmd.header.frame_id = 'base_link'
+            drive_cmd.header.stamp = rospy.Time()
+            drive_cmd.drive.speed = 0
+            self.drive_pub.publish(drive_cmd)
+            return
         
         # find angle in car frame
         dx,dy = self.trajectory.points[i][0]-pose[0],self.trajectory.points[i][1]-pose[1]
