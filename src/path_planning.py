@@ -2,7 +2,7 @@
 
 import rospy
 import numpy as np
-from geometry_msgs.msg import PoseStamped, PoseArray, Point
+from geometry_msgs.msg import PoseStamped, PoseArray, Point, PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry, OccupancyGrid
 import rospkg
 import time, os
@@ -23,7 +23,7 @@ class PathPlan(object):
     """
     def __init__(self):
 
-        self.start_pos = None
+        self.start_pos = (0,0)
         self.goal_pos_irl = None
         self.goal_pos_map = None
         self.graph = None
@@ -38,7 +38,8 @@ class PathPlan(object):
         self.trajectory = LineTrajectory("/planned_trajectory")
         self.goal_sub = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.goal_cb, queue_size=10)
         self.traj_pub = rospy.Publisher("/trajectory/current", PoseArray, queue_size=10)
-        self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_cb)
+        self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odom_cb) #TODO: MAKE THIS FUNCTIONAL
+        self.intial_pose_sub = rospy.Subscriber('/initialpose',PoseWithCovarianceStamped, self.initial_pose_cb, queue_size=10)
 
         self.rot_matrix = None
         self.rot_alt = None
@@ -46,7 +47,6 @@ class PathPlan(object):
         self.rot_back_alt = None
         self.heuristic = None
         self.map_res = None
-
 
     def pixelToMapCoords(self,u,v):
         u *= self.map_res; v *= self.map_res
@@ -80,12 +80,20 @@ class PathPlan(object):
  
         self.map = map
 
+    def initial_pose_cb(self,data):
+        x = data.pose.pose.position.x
+        y = data.pose.pose.position.y
+        u,v = self.mapToPixelCoords(x,y)
+        print('new start')
+        self.start_pos = (u,v)
 
     def odom_cb(self, data): # sets the curren position of the car... currently green arrow doesn't work?? same fix as in last lab tho
-        now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        if self.rot_alt != None:
-            u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-            self.start_pos = (u,v)
+        # print('HERE')
+        # now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
+        # if self.rot_alt != None:
+        #     u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
+        #     self.start_pos = (u,v)
+        pass
 
 
     def goal_cb(self, data):
@@ -138,6 +146,7 @@ class PathPlan(object):
                                 if val == 0:
                                     extension = partialPath + [child]
                                     costToChild = self.eucDist(head,child) + costIncurred
+                                    #costToChild = 1 + costIncurred
                                     heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,extension)))
                             except: # out of bounds
                                 continue 
@@ -149,6 +158,7 @@ class PathPlan(object):
         # NOTE: could be better to store map in irl coords rather than pixel coords to avoid transforms during A*!
 
         _, partialPath = self.AStarWithExpandedList(map,start_point,end_point)
+        
         
         # NOTE: changed utils.py to if True! should prob change back
         for node in partialPath:
