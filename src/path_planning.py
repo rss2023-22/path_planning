@@ -66,8 +66,8 @@ class PathPlan(object):
         map = np.array(list(msg.data))
         map = np.reshape(map,(msg.info.height, msg.info.width)) # convert from row-major order
         z = morphology.disk(10)
-        map = morphology.dilation(map,z)
-        print('dilated')
+        map = morphology.erosion(map,z)
+        print('eroded')
         height = np.shape(map)[0]; self.height = height
         width = np.shape(map)[1]; self.width = width
         self.heuristic = np.zeros((height,width))
@@ -115,6 +115,7 @@ class PathPlan(object):
             
             def getChildren(i,j):
                 return [(i+1,j),(i-1,j),(i,j+1),(i,j-1),(i+1,j+1),(i-1,j-1),(i+1,j-1),(i-1,j+1)]
+                #return [(i+1,j),(i-1,j),(i,j+1),(i,j-1),(i+1,j+1),(i-1,j-1),(i+1,j-1),(i-1,j+1),(i+2,j),(i-2,j),(i,j+2),(i,j-2),(i+2,j+2),(i-2,j-2),(i+2,j-2),(i-2,j+2),(i+2,j-1),(i-2,j+1),(i+2,j+1),(i-2,j-1),(i+1,j+2),(i-1,j-2),(i+1,j-2),(i-1,j+2)]
 
             """
             A* with an expanded list, assumes consistent heuristic to be correct
@@ -123,6 +124,7 @@ class PathPlan(object):
             parent = {S:None}
             expanded = set()
             Q = [(computeH(S[0],S[1]),(0,S))] # (cost_to_come+cost_incurred,(cost_incurred, head))
+            heapq.heapify(Q)
             print('planning path.......')
             while Q:
                 _, N = heapq.heappop(Q)
@@ -150,6 +152,7 @@ class PathPlan(object):
                                     costToChild = self.eucDist(head,child) + costIncurred
                                     #costToChild = 1 + costIncurred
                                     heapq.heappush(Q,(costToChild+computeH(child[0],child[1]),(costToChild,child)))
+                                    #heapq.heappush(Q,(costToChild,(costToChild,child)))
                             except: # out of bounds
                                 continue             
             return None, None
