@@ -55,7 +55,9 @@ class PathPlan(object):
     
     def mapToPixelCoords(self,x,y):
         u,v,_  = np.matmul(np.array([[x,y,0]]),self.rot_back_alt)[0]
-        return int((u+self.rot_back[0][3])/self.map_res), int((v+self.rot_back[1][3])/self.map_res)
+        x = (u+self.rot_back[0][3])/self.map_res; y = (v+self.rot_back[1][3])/self.map_res
+        x=np.rint([x])[0]; y=np.rint([y])[0]
+        return int(x),int(y)
 
     def eucDist(self,coord1,coord2): # coord = (x,y)
         return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]-coord2[1])**2)
