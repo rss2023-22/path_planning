@@ -63,18 +63,15 @@ class PathPlan(object):
         u,v,_  = np.matmul(np.array([[x,y,0]]),self.rot_back_alt)[0]
         x = (u+self.rot_back[0][3])/self.map_res; y = (v+self.rot_back[1][3])/self.map_res
         x=np.rint([x])[0]; y=np.rint([y])[0]
-        return int(x),int(y)
+        return int(x), int(y)
 
-    def eucDist(self,coord1,coord2): # coord = (x,y)
+    def eucDist(self,coord1,coord2): 
         return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]-coord2[1])**2)
 
     def map_cb(self, msg):
-        self.map_res = msg.info.resolution
-        map = np.reshape(np.array(list(msg.data)),(msg.info.height, msg.info.width)) # convert from row-major order
-        
-        height = np.shape(map)[0]; self.height = height
-        width = np.shape(map)[1]; self.width = width
-        self.heuristic = np.zeros((height,width))
+        map = np.reshape(np.array(list(msg.data)),(msg.info.height, msg.info.width)).astype('uint8') # convert from row-major order
+        self.map_res = msg.info.resolution; self.height = np.shape(map)[0]; self.width = np.shape(map)[1]
+        self.heuristic = np.zeros((self.height,self.width))
 
         # DEFINE ROTATION STUFF
         rot_matrix = tf.transformations.quaternion_matrix([0, 0, msg.info.origin.orientation.z, msg.info.origin.orientation.w])
@@ -84,7 +81,6 @@ class PathPlan(object):
 
         # dilate
         map[map > 0] = 1; map[map < 0] = 1
-        map = map.astype('uint8')
         kernel = np.ones((12, 12), np.uint8)
         map = ndimage.binary_dilation(map,structure=kernel)
         self.map = map
@@ -165,12 +161,11 @@ class PathPlan(object):
                 x1,y1 = np.round(self.pixelToMapCoords(node[0],node[1]),decimals =2)
                 point.x = x1; point.y = y1; point.z = 0.0
                 self.trajectory.addPoint(point)
-        else:
-            print('ERR: failed to find path')
-
-            # publish traj and visualize
+                # publish traj and visualize
             self.traj_pub.publish(self.trajectory.toPoseArray())
             self.trajectory.publish_viz()
+        else:
+            print('ERR: failed to find path')
 
 
 if __name__=="__main__":
