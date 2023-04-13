@@ -5,12 +5,14 @@ import numpy as np
 from geometry_msgs.msg import PoseStamped, PoseArray, Point, PoseWithCovarianceStamped
 from nav_msgs.msg import Odometry, OccupancyGrid
 import rospkg
+from scipy import ndimage
 import time, os
 #import dubins
 import tf
 from utils import LineTrajectory
 from graph_class import Graph
 import heapq
+#import cv2 
 #from skimage import morphology
 
 #### NOTE: later on we should try dublin curves, nice package in the git for this...
@@ -83,6 +85,15 @@ class PathPlan(object):
         rot_matrix[0][3] = msg.info.origin.position.x; rot_matrix[1][3] = msg.info.origin.position.y; rot_matrix[2][3] = msg.info.origin.position.z
         rot_alt = [rot_matrix[0][0:3],rot_matrix[1][0:3],rot_matrix[2][0:3]]
         self.rot_matrix = rot_matrix; self.rot_alt = rot_alt; self.rot_back = np.linalg.inv(self.rot_matrix); self.rot_back_alt = np.linalg.inv(self.rot_alt)
+        self.map = map
+        map[map > 0] = 1
+        map[map < 0] = 1
+        map = map.astype('uint8')
+
+        kernel = np.ones((12, 12), np.uint8)
+        map = ndimage.binary_dilation(map,structure=kernel)
+        # Using cv2.erode() method 
+        #map = cv2.dilate(map, kernel) 
         self.map = map
         print('MAP INITIATED')
         print('-----------------------------------')
