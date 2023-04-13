@@ -166,10 +166,8 @@ class PathPlan(object):
                 point.x = x1; point.y = y1; point.z = 0.0
                 self.trajectory.addPoint(point)
 
-            # publish trajectory
+            # publish traj and visualize
             self.traj_pub.publish(self.trajectory.toPoseArray())
-
-            # visualize trajectory Markers
             self.trajectory.publish_viz()
 
 
