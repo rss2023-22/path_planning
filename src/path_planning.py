@@ -69,12 +69,9 @@ class PathPlan(object):
         return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]-coord2[1])**2)
 
     def map_cb(self, msg):
-        # NOTE: EVERYTHING IN THIS FUNCTION CAN BE IMPROVED FOR SPEED
         self.map_res = msg.info.resolution
         map = np.array(list(msg.data))
         map = np.reshape(map,(msg.info.height, msg.info.width)) # convert from row-major order
-        #z = morphology.disk(10)
-        #map = morphology.erosion(map,z)
         
         height = np.shape(map)[0]; self.height = height
         width = np.shape(map)[1]; self.width = width
