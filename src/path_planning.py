@@ -23,7 +23,7 @@ class PathPlan(object):
     """
     def __init__(self):
 
-        self.start_pos = (0,0)
+        self.start_pos = None
         self.goal_pos_irl = None
         self.goal_pos_map = None
         self.graph = None
@@ -86,18 +86,17 @@ class PathPlan(object):
 
     def initial_pose_cb(self,data):
         u,v = self.mapToPixelCoords(data.pose.pose.position.x,data.pose.pose.position.y)
-        print('new start' + str(u,v))
-        print('-----------------------------------')
+        print('new start(init)' + str((u,v)))
         self.start_pos = (u,v)
 
     def odom_cb(self, data): # sets the curren position of the car... currently green arrow doesn't work?? same fix as in last lab tho
        # print('HERE')
-        now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
+        #now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
         if self.rot_alt != None:
             u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-            self.start_pos = (u,v)
-            print('new start' + str((u,v)))
-            print('-----------------------------------')
+            if (u,v) != self.start_pos:    
+                self.start_pos = (u,v)
+                print('new start(odom)' + str((u,v)))
         #pass
 
 
