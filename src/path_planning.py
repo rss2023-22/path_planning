@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import json
 import rospy
 import numpy as np
 from geometry_msgs.msg import PoseStamped, PoseArray, Point, PoseWithCovarianceStamped
@@ -9,14 +9,18 @@ import time, os
 #import dubins
 import tf
 from utils import LineTrajectory
-from graph_class import Graph
+#from graph_class import Graph
 import heapq
+import load_eroded_map
 #from skimage import morphology
 
 #### NOTE: later on we should try dublin curves, nice package in the git for this...
 # roslaunch racecar_simulator simulate.launch
 # roslaunch lab6 plan_trajectory.launch
 # sudo apt-get install python-scipy
+
+
+# TODO: figure out dilation in gradescope? idk
 class PathPlan(object):
     """ Listens for goal pose published by RViz and uses it to plan a path from
     current car pose.
@@ -48,6 +52,7 @@ class PathPlan(object):
         self.rot_back_alt = None
         self.heuristic = None
         self.map_res = None
+        print(os.getcwd())
 
     def pixelToMapCoords(self,u,v):
         u *= self.map_res; v *= self.map_res
@@ -80,24 +85,27 @@ class PathPlan(object):
         rot_matrix[0][3] = msg.info.origin.position.x; rot_matrix[1][3] = msg.info.origin.position.y; rot_matrix[2][3] = msg.info.origin.position.z
         rot_alt = [rot_matrix[0][0:3],rot_matrix[1][0:3],rot_matrix[2][0:3]]
         self.rot_matrix = rot_matrix; self.rot_alt = rot_alt; self.rot_back = np.linalg.inv(self.rot_matrix); self.rot_back_alt = np.linalg.inv(self.rot_alt)
+    
+        map = load_eroded_map.get_map() # LOADS IN ERODED MAP FROM .json FILE -> temporary workaround to avoid skimage import in autograder
         self.map = map
         print('MAP INITIATED')
         print('-----------------------------------')
 
     def initial_pose_cb(self,data):
         u,v = self.mapToPixelCoords(data.pose.pose.position.x,data.pose.pose.position.y)
-        print('new start(init)' + str((u,v)))
-        self.start_pos = (u,v)
+        if  (u,v) != self.start_pos:
+            print('new start(init)' + str((u,v)))
+            self.start_pos = (u,v)
 
     def odom_cb(self, data): # sets the curren position of the car... currently green arrow doesn't work?? same fix as in last lab tho
        # print('HERE')
         #now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        if self.rot_alt != None:
-            u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-            if (u,v) != self.start_pos:    
-                self.start_pos = (u,v)
-                print('new start(odom)' + str((u,v)))
-        #pass
+        # if self.rot_alt != None:
+        #     u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
+        #     if (u,v) != self.start_pos:    
+        #         self.start_pos = (u,v)
+        #         print('new start(odom)' + str((u,v)))
+        pass
 
 
     def goal_cb(self, data):
