@@ -112,16 +112,14 @@ class PathPlan(object):
         self.goal_pos_irl = (data.pose.position.x,data.pose.position.y,theta)
         self.trajectory = LineTrajectory("/planned_trajectory")
         u,v = self.mapToPixelCoords(self.goal_pos_irl[0],self.goal_pos_irl[1])
-        self.goal_pos_map = (u,v) # no theta?
-        print('set new goal:'+str(self.goal_pos_map))
-
-
+        self.goal_pos_map = (u,v) 
+        print('### set new goal:'+str(self.goal_pos_map)+' ###')
         self.plan_path((self.start_pos[0],self.start_pos[1]),self.goal_pos_map,self.map)
 
 
     def AStarWithExpandedListPartialPaths(self,map,S,G):
             
-            def computeH(u,v): # NOTE: currently this does it in pixel frame
+            def computeH(u,v): 
                 return self.eucDist((u,v),(self.goal_pos_map[0],self.goal_pos_map[1]))
             
             def getChildren(i,j):
