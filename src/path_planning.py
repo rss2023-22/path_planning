@@ -62,8 +62,7 @@ class PathPlan(object):
     def mapToPixelCoords(self,x,y):
         u,v,_  = np.matmul(np.array([[x,y,0]]),self.rot_back_alt)[0]
         x = (u+self.rot_back[0][3])/self.map_res; y = (v+self.rot_back[1][3])/self.map_res
-        x=np.rint([x])[0]; y=np.rint([y])[0]
-        return int(x), int(y)
+        return int(np.rint([x])[0]), int(np.rint([y])[0])
 
     def eucDist(self,coord1,coord2): 
         return np.sqrt((coord1[0]-coord2[0])**2+(coord1[1]-coord2[1])**2)
@@ -71,7 +70,6 @@ class PathPlan(object):
     def map_cb(self, msg):
         map = np.reshape(np.array(list(msg.data)),(msg.info.height, msg.info.width)).astype('uint8') # convert from row-major order
         self.map_res = msg.info.resolution; self.height = np.shape(map)[0]; self.width = np.shape(map)[1]
-        self.heuristic = np.zeros((self.height,self.width))
 
         # DEFINE ROTATION STUFF
         rot_matrix = tf.transformations.quaternion_matrix([0, 0, msg.info.origin.orientation.z, msg.info.origin.orientation.w])
