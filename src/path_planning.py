@@ -89,11 +89,8 @@ class PathPlan(object):
         map[map > 0] = 1
         map[map < 0] = 1
         map = map.astype('uint8')
-
         kernel = np.ones((12, 12), np.uint8)
         map = ndimage.binary_dilation(map,structure=kernel)
-        # Using cv2.erode() method 
-        #map = cv2.dilate(map, kernel) 
         self.map = map
         print('MAP INITIATED')
         print('-----------------------------------')
