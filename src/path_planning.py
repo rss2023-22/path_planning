@@ -165,6 +165,8 @@ class PathPlan(object):
                 x1,y1 = np.round(self.pixelToMapCoords(node[0],node[1]),decimals =2)
                 point.x = x1; point.y = y1; point.z = 0.0
                 self.trajectory.addPoint(point)
+        else:
+            print('ERR: failed to find path')
 
             # publish traj and visualize
             self.traj_pub.publish(self.trajectory.toPoseArray())
