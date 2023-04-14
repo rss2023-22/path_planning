@@ -44,27 +44,6 @@ class PurePursuit(object):
         pose = (msg.pose.pose.position.x,msg.pose.pose.position.y)
         
         # find target point
-        '''
-        nearest_point_index = None
-        nearest_dist = float('inf')
-        for i in range(len(self.trajectory.points)):
-            dist = eucl_dist(self.trajectory.points[i],pose)
-            if dist < nearest_dist:
-                nearest_dist = dist
-                nearest_point_index = i
-        
-        for i in range(nearest_point_index,len(self.trajectory.points)):
-            if eucl_dist(self.trajectory.points[i],pose) > self.lookahead: break
-        else:
-            drive_cmd = AckermannDriveStamped()
-            drive_cmd.header.frame_id = 'base_link'
-            drive_cmd.header.stamp = rospy.Time()
-            drive_cmd.drive.speed = 0
-            self.drive_pub.publish(drive_cmd)
-            return
-        
-        target_point = self.trajectory.points[i]
-        '''
         nearest_point_index = None
         nearest_point = None
         nearest_dist = float('inf')
