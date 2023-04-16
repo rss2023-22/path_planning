@@ -39,7 +39,7 @@ class PathPlan(object):
         self.start_time = None
 
         self.odom_topic = rospy.get_param("~odom_topic")
-        self.odom_topic = '/odom' # FOR TESTING ONLY - on real car, change to listen to localization shit... is this right?
+        #self.odom_topic = '/odom' # FOR TESTING ONLY - on real car, change to listen to localization shit... is this right?
         self.map_sub = rospy.Subscriber("/map", OccupancyGrid, self.map_cb)
         self.trajectory = LineTrajectory("/planned_trajectory")
         self.goal_sub = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.goal_cb, queue_size=10)
@@ -91,13 +91,9 @@ class PathPlan(object):
             self.start_pos = (u,v)
 
     def odom_cb(self, data): # NOTE: not sure what this callback should be doing?
-        #now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        # if self.rot_alt != None:
-        #     u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-        #     if (u,v) != self.start_pos:    
-        #         self.start_pos = (u,v)
-        #         print('new start(odom)' + str((u,v)))
-        pass
+        #if self.rot_back_alt == None or self.rot_back == None or self.map_res == None: return
+        u,v = self.mapToPixelCoords(data.pose.pose.position.x,data.pose.pose.position.y)
+        self.start_pos = (u,v)
 
 
     def goal_cb(self, data):
