@@ -6,6 +6,7 @@ import time
 import utils
 import tf
 
+from std_msgs.msg import Float32
 from geometry_msgs.msg import PoseArray, PoseStamped
 from visualization_msgs.msg import Marker
 from ackermann_msgs.msg import AckermannDriveStamped
@@ -18,14 +19,14 @@ class PurePursuit(object):
     """
     def __init__(self):
         self.odom_topic       = rospy.get_param("~odom_topic")
-        self.lookahead        = 0.5 # FILL IN #
+        self.lookahead        = 1 # FILL IN #
         self.speed            = 1 # FILL IN #
         self.wheelbase_length = 1 # FILL IN #
         self.trajectory  = utils.LineTrajectory("/followed_trajectory")
         self.traj_sub = rospy.Subscriber("/trajectory/current", PoseArray, self.trajectory_callback, queue_size=1)
-        self.drive_pub = rospy.Publisher("/drive", AckermannDriveStamped, queue_size=1)
+        self.drive_pub = rospy.Publisher("/vesc/ackermann_cmd_mux/input/navigation", AckermannDriveStamped, queue_size=1)
         self.odom_sub = rospy.Subscriber(self.odom_topic, Odometry, self.odometry_callback, queue_size=1)
-
+	self.error_pub = rospy.Publisher("/error_dist",Float32,queue_size=10)
     def trajectory_callback(self, msg):
         ''' Clears the currently followed trajectory, and loads the new one from the message
         '''
@@ -71,6 +72,7 @@ class PurePursuit(object):
                     elif j == 2: nearest_point_index = i+t
         
         # If we're too far from the track, beeline to the nearest point
+	self.error_pub.publish(nearest_dist)
         if nearest_dist >= self.lookahead:
             target_point = nearest_point
         else:

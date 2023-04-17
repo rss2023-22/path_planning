@@ -39,7 +39,7 @@ class PathPlan(object):
         self.start_time = None
 
         self.odom_topic = rospy.get_param("~odom_topic")
-        self.odom_topic = '/odom' # FOR TESTING ONLY - on real car, change to listen to localization shit... is this right?
+        #self.odom_topic = '/odom' # FOR TESTING ONLY - on real car, change to listen to localization shit... is this right?
         self.map_sub = rospy.Subscriber("/map", OccupancyGrid, self.map_cb)
         self.trajectory = LineTrajectory("/planned_trajectory")
         self.goal_sub = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.goal_cb, queue_size=10)
@@ -70,7 +70,7 @@ class PathPlan(object):
     def map_cb(self, msg):
         map = np.reshape(np.array(list(msg.data)),(msg.info.height, msg.info.width)).astype('uint8') # convert from row-major order
         self.map_res = msg.info.resolution; self.height = np.shape(map)[0]; self.width = np.shape(map)[1]
-
+	map_copy = map[:]
         # DEFINE ROTATION STUFF
         rot_matrix = tf.transformations.quaternion_matrix([0, 0, msg.info.origin.orientation.z, msg.info.origin.orientation.w])
         rot_matrix[0][3] = msg.info.origin.position.x; rot_matrix[1][3] = msg.info.origin.position.y; rot_matrix[2][3] = msg.info.origin.position.z
@@ -79,9 +79,12 @@ class PathPlan(object):
 
         # dilate
         map[map > 0] = 1; map[map < 0] = 1
-        kernel = np.ones((12, 12), np.uint8)
+	map_copy = map[:]
+        kernel = np.ones((28, 28), np.uint8)
         map = ndimage.binary_dilation(map,structure=kernel)
-        self.map = map
+        x = 40
+	map[767-x:767+x,423-25:423+25]=map_copy[767-x:767+x,423-25:423+25]
+	self.map = map
         print('### MAP INITIATED ###')
 
     def initial_pose_cb(self,data):
@@ -91,13 +94,9 @@ class PathPlan(object):
             self.start_pos = (u,v)
 
     def odom_cb(self, data): # NOTE: not sure what this callback should be doing?
-        #now_odom = np.array([data.twist.twist.linear.x, data.twist.twist.linear.y, data.twist.twist.angular.z])
-        # if self.rot_alt != None:
-        #     u,v = self.mapToPixelCoords(data.twist.twist.linear.x,data.twist.twist.linear.y)
-        #     if (u,v) != self.start_pos:    
-        #         self.start_pos = (u,v)
-        #         print('new start(odom)' + str((u,v)))
-        pass
+        #if self.rot_back_alt == None or self.rot_back == None or self.map_res == None: return
+        u,v = self.mapToPixelCoords(data.pose.pose.position.x,data.pose.pose.position.y)
+        self.start_pos = (u,v)
 
 
     def goal_cb(self, data):
